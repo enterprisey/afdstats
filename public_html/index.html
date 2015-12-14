@@ -1,0 +1,51 @@
+<!doctype html> 
+<html> 
+<head> 
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> 
+  <meta name=viewport content="width=device-width, initial-scale=1">
+  <title>AfD Stats</title>
+  <link rel="stylesheet" type="text/css" href="afdstats.css">
+  <link rel="stylesheet" type="text/css" href="mw.ui.css">
+</head>
+
+<body class="client-js">
+<h1>AfD Statistics Tool</h1>
+<p>This tool will analyze the <a href="https://en.wikipedia.org/wiki/Wikipedia:Articles for deletion">AfD</a> voting history of a user and report statistical results (English Wikipedia only).  The tool searches through the wikitext of AfD pages that have been edited by the user specified below, and attempts to find their vote by searching for their signature on the page.</p>
+
+<div id="afdstatsform">
+<form action="afdstats.py" method="get">
+<table>
+  <tr>
+    <td><label>Username:</label></td>
+    <td><input type="text" class="mw-ui-input" name="name" /></td>
+  </tr>
+  <tr>
+    <td><label>Number of AfD's to analyze:<span class="small">(optional, default=50, max=500)</span></label></td>
+    <td><input type="text" name="max" class="mw-ui-input" maxlength="3"/></td>
+  </tr>
+  <tr>
+    <td><label>Starting Date:<span class="small">(optional, YYYYMMDD)</span></label></td>
+    <td><input type="text" name="startdate" class="mw-ui-input" maxlength="8"/></td>
+  </tr>
+  <tr>
+    <td><label>Alternate name:<span class="small">(optional, see below for more info)</span></label></td>
+    <td><input type="text" name="altname" class="mw-ui-input" /></td>
+  </tr>
+</table>
+<p>
+  <div class="mw-ui-checkbox">
+    <input type="checkbox" id="nomsonly" name="nomsonly" value="true" />
+    <label for="nomsonly">Only show AfD's that were nominated by this user</label>
+  </div>
+</p>
+<button type="submit" class="mw-ui-button mw-ui-progressive mw-ui-big">Submit</button>
+</div>
+</form>
+</div>
+
+<h2>More information about this tool</h2>
+<p>Since computer programs are generally not good at evaluating humanity's intentions through their words, this tool is limited to searching for <b>bolded</b> votes in AfD's.  If the user you are searching for doesn't routinely bold their votes, then this tool will likely not work well.</p>
+<p>You can also specify the maximum number of AfD's to search through (maximum is 250 at this time).  In some cases, the number of AfD's displayed will be less than the maximum number specified.  This can happen when a user edits an AfD page but doesn't vote (e.g. just leaves a comment).</p>
+<p>The Alternate Name field can be used in cases where the user's username does not appear in their signature.  This can happen if the user underwent a username change at some point (because their old edits will have the signature of a different username applied to them), or if their signature simply doesn't include a link to their user page (e.g. if their signature links to a different page that redirects to their user page).</p>
+</body>
+</html>

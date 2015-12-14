@@ -1,0 +1,264 @@
+button {
+    font-family: inherit;
+    font-size: 1em;
+    display: inline-block;
+    padding: .5em 1em;
+    margin: 0;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    *display: inline;
+    zoom: 1;
+    background: #ffffff;
+    color: #555555;
+    border: 1px solid #cccccc;
+    border-radius: 2px;
+    min-width: 4em;
+    vertical-align: middle;
+    text-align: center;
+    font-weight: bold;
+    cursor: pointer
+}
+.mw-ui-button:hover {
+    background-color: #cccccc
+}
+.mw-ui-button:focus {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 1px #cccccc;
+    outline: none
+}
+.mw-ui-button:focus::-moz-focus-inner {
+    border-color: transparent
+}
+.mw-ui-button:active,
+.mw-ui-button.mw-ui-checked {
+    background: #777777;
+    box-shadow: none
+}
+.mw-ui-button:hover,
+.mw-ui-button:active,
+.mw-ui-button:visited {
+    color: #555555
+}
+.mw-ui-button:focus {
+    background-color: #cccccc
+}
+.mw-ui-button.mw-ui-big {
+    font-size: 1.3em
+}
+.mw-ui-button.mw-ui-block {
+    display: block;
+    width: 100%
+}
+.mw-ui-button.mw-ui-progressive,
+.mw-ui-button.mw-ui-primary {
+    background: #347bff;
+    color: #fff;
+    border: 1px solid #347bff;
+    text-shadow: 0 1px rgba(0, 0, 0, 0.1)
+}
+.mw-ui-button.mw-ui-progressive:hover,
+.mw-ui-button.mw-ui-primary:hover {
+    background-color: #2962cc
+}
+.mw-ui-button.mw-ui-progressive:focus,
+.mw-ui-button.mw-ui-primary:focus {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 1px #2962cc;
+    outline: none
+}
+.mw-ui-button.mw-ui-progressive:focus::-moz-focus-inner,
+.mw-ui-button.mw-ui-primary:focus::-moz-focus-inner {
+    border-color: transparent
+}
+.mw-ui-button.mw-ui-progressive:active,
+.mw-ui-button.mw-ui-primary:active,
+.mw-ui-button.mw-ui-progressive.mw-ui-checked,
+.mw-ui-button.mw-ui-primary.mw-ui-checked {
+    background: #2962cc;
+    box-shadow: none
+}
+.mw-ui-button.mw-ui-progressive:disabled,
+.mw-ui-button.mw-ui-primary:disabled {
+    background: #dddddd;
+    border-color: #dddddd
+}
+.mw-ui-button.mw-ui-progressive:disabled:hover,
+.mw-ui-button.mw-ui-primary:disabled:hover,
+.mw-ui-button.mw-ui-progressive:disabled:active,
+.mw-ui-button.mw-ui-primary:disabled:active,
+.mw-ui-button.mw-ui-progressive:disabled.mw-ui-checked,
+.mw-ui-button.mw-ui-primary:disabled.mw-ui-checked {
+    box-shadow: none
+}
+.mw-ui-button.mw-ui-progressive.mw-ui-quiet,
+.mw-ui-button.mw-ui-primary.mw-ui-quiet {
+    color: #555555
+}
+.mw-ui-button.mw-ui-progressive.mw-ui-quiet:hover,
+.mw-ui-button.mw-ui-primary.mw-ui-quiet:hover,
+.mw-ui-button.mw-ui-progressive.mw-ui-quiet:focus,
+.mw-ui-button.mw-ui-primary.mw-ui-quiet:focus {
+    background: transparent;
+    color: #347bff
+}
+.mw-ui-button.mw-ui-progressive.mw-ui-quiet:active,
+.mw-ui-button.mw-ui-primary.mw-ui-quiet:active,
+.mw-ui-button.mw-ui-progressive.mw-ui-quiet.mw-ui-checked,
+.mw-ui-button.mw-ui-primary.mw-ui-quiet.mw-ui-checked {
+    color: #2962cc
+}
+.mw-ui-button.mw-ui-progressive.mw-ui-quiet:disabled,
+.mw-ui-button.mw-ui-primary.mw-ui-quiet:disabled {
+    color: #cccccc
+}
+.mw-ui-checkbox {
+    display: inline-block;
+    vertical-align: middle
+}
+.client-js .mw-ui-checkbox:not(#noop) {
+    position: relative;
+    display: table
+}
+.client-js .mw-ui-checkbox:not(#noop) * {
+    font: inherit;
+    vertical-align: middle
+}
+.client-js .mw-ui-checkbox:not(#noop) input[type="checkbox"] {
+    opacity: 0;
+    z-index: 1;
+    position: relative;
+    width: 2em;
+    height: 2em;
+    max-width: none;
+    margin: 0;
+    margin-right: 0.4em;
+    display: table-cell
+}
+.client-js .mw-ui-checkbox:not(#noop) input[type="checkbox"] + label {
+    display: table-cell
+}
+.client-js .mw-ui-checkbox:not(#noop) input[type="checkbox"] + label::before {
+    content: '';
+    cursor: pointer;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    position: absolute;
+    left: 0;
+    border-radius: 2px;
+    width: 2em;
+    height: 2em;
+    line-height: 2em;
+    background-color: #fff;
+    border: 1px solid #777777;
+    top: 50%;
+    margin-top: -1em;
+    background-image: url(//en.wikipedia.org/static/1.27.0-wmf.6/resources/src/mediawiki.ui/components/images/checked.png?a471d);
+    background-image: -webkit-linear-gradient(transparent, transparent), url(data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%3E%3Cpath%20d%3D%22M4%2012l5%205L20%205%22%20stroke%3D%22%2300B78C%22%20stroke-width%3D%223%22%20fill%3D%22none%22%2F%3E%3C%2Fsvg%3E%0A);
+    background-image: -webkit-linear-gradient(transparent, transparent), url(//en.wikipedia.org/static/1.27.0-wmf.6/resources/src/mediawiki.ui/components/images/checked.svg?288f7)!ie;
+    background-image: linear-gradient(transparent, transparent), url(data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%3E%3Cpath%20d%3D%22M4%2012l5%205L20%205%22%20stroke%3D%22%2300B78C%22%20stroke-width%3D%223%22%20fill%3D%22none%22%2F%3E%3C%2Fsvg%3E%0A);
+    background-image: linear-gradient(transparent, transparent), url(//en.wikipedia.org/static/1.27.0-wmf.6/resources/src/mediawiki.ui/components/images/checked.svg?288f7)!ie;
+    background-image: -o-linear-gradient(transparent, transparent), url(//en.wikipedia.org/static/1.27.0-wmf.6/resources/src/mediawiki.ui/components/images/checked.png?a471d);
+    -o-background-size: 1.8em 1.8em;
+    -webkit-background-size: 1.8em 1.8em;
+    background-size: 1.8em 1.8em;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-origin: border-box;
+    background-size: 0 0
+}
+.client-js .mw-ui-checkbox:not(#noop) input[type="checkbox"]:checked + label::before {
+    background-size: 100% 100%
+}
+.client-js .mw-ui-checkbox:not(#noop) input[type="checkbox"]:active + label::before {
+    background-color: #dddddd;
+    border-color: #dddddd
+}
+.client-js .mw-ui-checkbox:not(#noop) input[type="checkbox"]:focus + label::before {
+    border-width: 2px
+}
+.client-js .mw-ui-checkbox:not(#noop) input[type="checkbox"]:focus:hover + label::before,
+.client-js .mw-ui-checkbox:not(#noop) input[type="checkbox"]:hover + label::before {
+    border-bottom-width: 3px
+}
+.client-js .mw-ui-checkbox:not(#noop) input[type="checkbox"]:disabled + label::before {
+    cursor: default;
+    background-color: #eeeeee;
+    border-color: #eeeeee
+}
+.client-js .mw-ui-checkbox:not(#noop) input[type="checkbox"]:disabled:checked + label::before {
+    background-image: url(//en.wikipedia.org/static/1.27.0-wmf.6/resources/src/mediawiki.ui/components/images/checked_disabled.png?b5ef4);
+    background-image: -webkit-linear-gradient(transparent, transparent), url(data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%3E%3Cpath%20d%3D%22M4%2012l5%205L20%205%22%20stroke%3D%22%23fff%22%20stroke-width%3D%223%22%20fill%3D%22none%22%2F%3E%3C%2Fsvg%3E%0A);
+    background-image: -webkit-linear-gradient(transparent, transparent), url(//en.wikipedia.org/static/1.27.0-wmf.6/resources/src/mediawiki.ui/components/images/checked_disabled.svg?f9f47)!ie;
+    background-image: linear-gradient(transparent, transparent), url(data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%3E%3Cpath%20d%3D%22M4%2012l5%205L20%205%22%20stroke%3D%22%23fff%22%20stroke-width%3D%223%22%20fill%3D%22none%22%2F%3E%3C%2Fsvg%3E%0A);
+    background-image: linear-gradient(transparent, transparent), url(//en.wikipedia.org/static/1.27.0-wmf.6/resources/src/mediawiki.ui/components/images/checked_disabled.svg?f9f47)!ie;
+    background-image: -o-linear-gradient(transparent, transparent), url(//en.wikipedia.org/static/1.27.0-wmf.6/resources/src/mediawiki.ui/components/images/checked_disabled.png?b5ef4)
+}
+.mw-ui-input {
+    -webkit-appearance: none;
+    border: 1px solid #cccccc;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    width: 100%;
+    padding: .3em .3em .3em .6em;
+    display: block;
+    vertical-align: middle;
+    border-radius: 2px;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit
+}
+.mw-ui-input::-webkit-input-placeholder {
+    font-style: italic;
+    font-weight: normal
+}
+.mw-ui-input::-moz-placeholder {
+    font-style: italic;
+    font-weight: normal
+}
+.mw-ui-input:-moz-placeholder {
+    font-style: italic;
+    font-weight: normal
+}
+.mw-ui-input:-ms-input-placeholder {
+    font-style: italic;
+    font-weight: normal
+}
+.mw-ui-input:invalid {
+    box-shadow: none
+}
+.mw-ui-input:focus {
+    box-shadow: inset 0 0 0 2px #347bff;
+    border-color: #347bff;
+    outline: 0
+}
+.mw-ui-input:disabled {
+    border-color: #eeeeee;
+    color: #cccccc
+}
+textarea.mw-ui-input {
+    min-height: 8em
+}
+input[type="number"],
+.mw-ui-input-inline {
+    display: inline-block;
+    width: auto
+}
+.mw-ui-input-large {
+    margin-top: 0;
+    margin-bottom: 0
+}
+.mw-ui-input-large + .mw-ui-input-large {
+    margin-top: -1px
+}
+.mw-ui-input-large:focus {
+    position: relative
+}
+input.mw-ui-input-large {
+    font-size: 1.75em;
+    font-weight: bold;
+    line-height: 1.25em
+}

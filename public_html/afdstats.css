@@ -1,0 +1,136 @@
+body {
+font-family:sans-serif;font-size:85%;
+background:#f3f3f3;
+color:black;
+margin:10;
+padding:10;
+max-width: 875px;
+}
+
+a {
+text-decoration:none;
+color:#002bb8;
+background:none;
+}
+
+a:hover {
+text-decoration:underline;
+}
+
+#afdstatsform {
+border:2px solid #aaa;
+padding:12px;
+width:500px;
+}
+#afdstatsform input {
+    padding:4px 2px;
+}
+#afdstatsform .small {
+color:#666;
+display:block;
+text-align:right;
+width:200px;
+font-size:13px;
+}
+#afdstatsform button {
+    display: table;
+    margin: 0 auto;
+}
+
+/* Greyscale
+Table Design by Scott Boyle, Two Plus Four
+www.twoplusfour.co.uk
+----------------------------------------------- */
+
+table {border-collapse: collapse;
+border: 2px solid #000;
+font: normal 100%/140% arial, helvetica, sans-serif;
+color: #555;
+background: #fff;}
+
+.matrix {table-layout:fixed;}
+
+td, th {border: 1px dotted #bbb;
+padding: .25em;}
+
+caption {padding: 0 0 .5em 0;
+text-align: left;
+font-size: 1.4em;
+font-weight: bold;
+text-transform: uppercase;
+color: #333;
+background: transparent;}
+
+/* =links
+----------------------------------------------- */
+
+table a {padding: 1px;
+text-decoration: none;
+font-weight: bold;
+background: transparent;}
+
+table a:link {border-bottom: 1px dashed #ddd;
+color: #000;}
+
+table a:visited {border-bottom: 1px dashed #ccc;
+color: #808080;}
+
+table a:hover {border-bottom: 1px dashed #bbb;
+color: #666;}
+
+/* =head =foot
+----------------------------------------------- */
+
+thead th, tfoot th {border: 2px solid #000;
+text-align: center;
+font-size: 1.2em;
+font-weight: bold;
+color: #333;
+background: transparent;}
+
+tfoot td {border: 2px solid #000;}
+
+/* =body
+----------------------------------------------- */
+
+tbody th {border: 2px solid #000;
+text-align: center;
+font-size: 1.2em;
+font-weight: bold;
+color: #333;
+background: transparent;
+white-space: nowrap;}
+
+tbody td {vertical-align: center;
+text-align: left;}
+
+.odd {background: #fcfcfc;}
+td.y {background: #99ff99;}
+td.n {background: #ff9999;}
+td.m {background: #ffff99;}
+td.yy {background: #99ff99; width:1em; height:1em; text-align:center;}
+td.nn {background: #ff9999; width:1em; height:1em; text-align:center;}
+td.mm {background: #ffff99; width:1em; height:1em; text-align:center;}
+td.yyy {background: #b7e0b7; width:1em; height:1em; text-align:center;}
+td.nnn {background: #e0b7b7; width:1em; height:1em; text-align:center;}
+td.mmm {background: #e0e0b7; width:1em; height:1em; text-align:center;}
+td.c {text-align: center;}
+
+tbody tr:hover {background: #fafafa;}
+
+#afdstatsform table {
+    background: transparent;
+    border: 0;
+}
+
+#afdstatsform td {
+    border: 0;
+}
+
+#afdstatsform label {
+    color: black;
+}
+
+#afdstatsform tr:hover {
+    background: transparent;
+}
