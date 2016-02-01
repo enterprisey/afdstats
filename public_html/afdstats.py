@@ -136,7 +136,7 @@ def main():
 				page = entry[0]
 				data = unescape(alldata["Wikipedia:" + page.replace("_", " ")])
 				data = re.sub("<(s|strike|del)>.*?</(s|strike|del)>", "", data, flags=re.IGNORECASE|re.DOTALL)
-				votes = re.findall("'{3}?.*?'{3}?.*?(?:(?:\{\{unsigned.*?\}\})|(?:<!--\s*Template:Unsigned\s*-->)|(?:\[\[User.*?\]\].*?\(UTC\)))", data, flags=re.IGNORECASE)
+				votes = re.findall("'{3}?.*?'{3}?.*?(?:(?:\{\{unsigned.*?\}\})|(?:class=\"autosigned\")|(?:\[\[User.*?\]\].*?\(UTC\)))", data, flags=re.IGNORECASE)
 				result = findresults(data[:max(data.find("=="), data.find("(UTC)"))])
 				dupvotes = []
 				deletionreviews = findDRV(data[:data.find("==")], page)
