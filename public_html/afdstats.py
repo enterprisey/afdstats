@@ -30,6 +30,7 @@ for v in statsvotes:
 for v in votetypes:
 	stats[v] = 0
 
+FOOTER = '<footer>Bugs, suggestions, questions?  Contact the maintainers at <a href="http://en.wikipedia.org/wiki/User_talk:APerson">User talk:APerson</a> and <a href="http://en.wikipedia.org/wiki/User_talk:Σ">User talk:Σ</a> • <a href="https://github.com/APerson241/afdstats" title="afdstats on GitHub">Source code</a></footer>'
 
 def main():
 	global MAXLIMIT
@@ -222,7 +223,7 @@ def main():
 <br>M = Merge
 <br>R = Redirect
 <br>T = Transwiki
-<br>U = Userfy
+<br>U = Userfy/Draftify
 <br>NC = No Consensus</small></div>
 <div style="clear:both;"></div><br><br>
 <div style="width:875px;">"""
@@ -265,7 +266,7 @@ def main():
 
 		elapsed = str(round(time.time() - starttime, 2))
 		print '<small>Elapsed time: ' + elapsed + ' seconds.</small><br />'
-		print '<br><small>Bugs, suggestions, questions?  Contact the maintainers at <a href="http://en.wikipedia.org/wiki/User_talk:APerson">User talk:APerson</a> and <a href="http://en.wikipedia.org/wiki/User_talk:Σ">User talk:Σ</a></small><br>'
+		print FOOTER
 		print '<a href="http://tools.wmflabs.org/afdstats/"><small>&larr;New search</small></a>'
 		print "</div></body>\n</html>"
 
@@ -301,7 +302,7 @@ def parsevote(v):
 		return "Delete"
 	elif "transwiki" in v:
 		return "Transwiki"
-	elif ("userfy" in v) or ("userfied" in v) or ("incubat" in v):
+	elif ("userfy" in v) or ("userfied" in v) or ("incubat" in v) or ("draftify" in v):
 		return "Userfy"
 	else:
 		return "UNDETERMINED"  
@@ -340,7 +341,7 @@ def findresults(thepage):       #Parse through the text of an AfD to find how it
 			return "Delete"
 		elif "transwiki" in result:
 			return "Transwiki"
-		elif ("userfy" in result) or ("userfied" in result) or ("incubat" in result):
+		elif ("userfy" in result) or ("userfied" in result) or ("incubat" in result) or ("draftify" in result):
 			return "Userfy"
 		elif "withdraw" in result:
 			return "Speedy Keep"
@@ -581,7 +582,7 @@ def link(p):
 
 def errorout(errorstr):         #General error handler, prints error message and aborts execution.
 	print "<p>ERROR: " + errorstr + "</p><p>Please <a href='http://tools.wmflabs.org/afdstats/'>try again</a>.</p>"
-	print '<br><small>Bugs, suggestions, questions?	 Contact the maintainers at <a href="http://en.wikipedia.org/wiki/User_talk:APerson">User talk:APerson</a> and <a href="http://en.wikipedia.org/wiki/User_talk:Σ">User talk:Σ</a></small><br>'
+	print FOOTER
 	print "</div></body>\n</html>"
 	sys.exit(0)
 	
