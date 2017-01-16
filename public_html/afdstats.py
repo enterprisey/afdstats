@@ -30,7 +30,7 @@ for v in statsvotes:
 for v in votetypes:
 	stats[v] = 0
 
-FOOTER = '<footer>Bugs, suggestions, questions?  Contact the maintainers at <a href="http://en.wikipedia.org/wiki/User_talk:APerson">User talk:APerson</a> and <a href="http://en.wikipedia.org/wiki/User_talk:Σ">User talk:Σ</a> • <a href="https://github.com/APerson241/afdstats" title="afdstats on GitHub">Source code</a></footer>'
+FOOTER = '<footer>Bugs, suggestions, questions?  Contact the maintainers at <a href="http://en.wikipedia.org/wiki/User_talk:Enterprisey">User talk:Enterprisey</a> and <a href="http://en.wikipedia.org/wiki/User_talk:Σ">User talk:Σ</a> • <a href="https://github.com/APerson241/afdstats" title="afdstats on GitHub">Source code</a></footer>'
 
 def main():
 	global MAXLIMIT
