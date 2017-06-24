@@ -256,10 +256,12 @@ def main():
 			printstr += "</tbody>\n</table>\n"
 			printstr += '<div style="width:875px;">\n<a href="afdstats.py?name=' + username.replace(" ", "_") + '&max=' + str(maxsearch) + '&startdate=' + datefmt(tablelist[-1][2]) + '&altname=' + altusername + '"><small>Next ' + str(maxsearch) + " AfD's &rarr;</small></a><br /><br />"
 	
-			if sum(matchstats) > 0:
-				print "Number of AfD's where vote matched result (green cells): " + str(matchstats[0]) + " (" + str(round((100.0*matchstats[0]) / sum(matchstats), 1)) + "%)<br>"
-				print "Number of AfD's where vote didn't match result (red cells): " + str(matchstats[1]) + " (" + str(round((100.0*matchstats[1]) / sum(matchstats), 1)) + "%)<br>"
-				print "Number of AfD's where result was \"No Consensus\" (yellow cells): " + str(matchstats[2]) + " (" + str(round((100.0*matchstats[2]) / sum(matchstats), 1)) + "%)<br>\n"
+			total_votes = sum(matchstats)
+			if total_votes > 0:
+				print("Number of AfD's where vote matched result (green cells): {} ({:.1%})<br>".format(matchstats[0], float(matchstats[0])/total_votes))
+				print("Number of AfD's where vote didn't match result (red cells): {} ({:.1%})<br>".format(matchstats[1], float(matchstats[1])/total_votes))
+				print("Number of AfD's where result was \"No Consensus\" (yellow cells): {} ({:.1%})<br>\n".format(matchstats[2], float(matchstats[2])/total_votes))
+				print("Without considering \"No Consensus\" results, {:.1%} of AfD's were matches and {:.1%} of AfD's were not.".format(float(matchstats[0])/(total_votes - matchstats[2]), float(matchstats[1])/(total_votes - matchstats[2])))
 			print printstr
 		else:
 			print "<br /><br />No votes found."
