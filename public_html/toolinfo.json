@@ -1,0 +1,9 @@
+{
+    "name": "afdstats",
+    "title": "AfD Stats",
+    "description": "A Wikipedia tool to analyze a user's history of contributions to deletion discussions.",
+    "url": "http://tools.wmflabs.org/afdstats/",
+    "keywords": "wikipedia, stats, enwiki, user, api, python",
+    "author": "Scottywong, Σ, APerson",
+    "repository": "https://github.com/APerson241/afdstats"
+}
