@@ -1,6 +1,8 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
 
+import cgitb; cgitb.enable()
+
 import MySQLdb
 import sys
 import os
@@ -135,23 +137,27 @@ def main():
 		for entry in pages:
 			try:
 				page = entry[0]
-				data = unescape(alldata["Wikipedia:" + page.replace("_", " ")])
+
+				# "data" means the full page text
+				raw_data = alldata["Wikipedia:" + page.replace("_", " ")]
+				data = unescape(raw_data.replace("\n", "\\n")).replace("\\n", "\n")
 				data = re.sub("<(s|strike|del)>.*?</(s|strike|del)>", "", data, flags=re.IGNORECASE|re.DOTALL)
 				votes = re.findall("'{3}?.*?'{3}?.*?(?:(?:\{\{unsigned.*?\}\})|(?:class=\"autosigned\"))?(?:\[\[User.*?\]\].*?\(UTC\))", data, flags=re.IGNORECASE)
 				result = findresults(data[:max(data.find("=="), data.find("(UTC)"))])
 				dupvotes = []
 				deletionreviews = findDRV(data[:data.find("==")], page)
+				find_voter_match = lambda vote: re.match("\[\[User.*?:(.*?)(?:\||(?:\]\]))", vote[vote.rfind("[[User"):], flags=re.IGNORECASE)
+
 				for vote in votes:
 					try:
-						votermatch = re.match("\[\[User.*?:(.*?)(?:\||(?:\]\]))", vote[vote.rfind("[[User"):], flags=re.IGNORECASE)
+						votermatch = find_voter_match(vote)
 						if votermatch == None:
 							continue
-						else:
-							voter = votermatch.group(1).strip()
+						voter = votermatch.group(1).strip()
 
-							# Sometimes, a "#top" will sneak in, so remove it
-							if voter.endswith("#top"):
-								voter = voter[:-4]
+						# Sometimes, a "#top" will sneak in, so remove it
+						if voter.endswith("#top"):
+							voter = voter[:-4]
 						if voter.lower() == username.lower() or voter.lower() == altusername.lower():
 							votetype = parsevote(vote[3:vote.find("'", 3)])
 							if votetype == None or votetype == "UNDETERMINED":
