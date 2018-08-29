@@ -32,7 +32,7 @@ for v in statsvotes:
 for v in votetypes:
 	stats[v] = 0
 
-FOOTER = '<footer>Bugs, suggestions, questions?  Contact the maintainers at <a href="http://en.wikipedia.org/wiki/User_talk:Enterprisey">User talk:Enterprisey</a> and <a href="http://en.wikipedia.org/wiki/User_talk:Σ">User talk:Σ</a> • <a href="https://github.com/APerson241/afdstats" title="afdstats on GitHub">Source code</a></footer>'
+FOOTER = '<footer>Bugs, suggestions, questions?  Contact the maintainers at <a href="http://en.wikipedia.org/wiki/User_talk:Enterprisey">User talk:Enterprisey</a> and <a href="http://en.wikipedia.org/wiki/User_talk:Σ">User talk:Σ</a> • <a href="https://github.com/enterprisey/afdstats" title="afdstats on GitHub">Source code</a></footer>'
 
 def main():
 	global MAXLIMIT
@@ -61,7 +61,7 @@ def main():
 		form = cgi.FieldStorage()
 		if "name" not in form:
 			errorout("No username entered.")
-		username = form["name"].value.replace("_", " ").replace("+", " ")
+		username = form["name"].value.replace("_", " ").replace("+", " ").strip()
 		username = urllib.unquote(username)
 		username = username[0].capitalize() + username[1:]
 		
@@ -83,7 +83,7 @@ def main():
 				nomsonly = True
 				
 		if "altname" in form:
-			altusername = urllib.unquote(form.getvalue("altname"))
+			altusername = urllib.unquote(form.getvalue("altname").strip())
 		else:
                         altusername = ""
 
@@ -142,11 +142,22 @@ def main():
 				raw_data = alldata["Wikipedia:" + page.replace("_", " ")]
 				data = unescape(raw_data.replace("\n", "\\n")).replace("\\n", "\n")
 				data = re.sub("<(s|strike|del)>.*?</(s|strike|del)>", "", data, flags=re.IGNORECASE|re.DOTALL)
-				votes = re.findall("'{3}?.*?'{3}?.*?(?:(?:\{\{unsigned.*?\}\})|(?:class=\"autosigned\"))?(?:\[\[User.*?\]\].*?\(UTC\))", data, flags=re.IGNORECASE)
-				result = findresults(data[:max(data.find("=="), data.find("(UTC)"))])
+
+				# We don't want to include the closing statement while finding votes
+				header_index = data.find("==")
+				if header_index > -1:
+					votes_data = data[header_index:]
+				else:
+					votes_data = data
+				votes = re.findall("'{3}?.*?'{3}?.*?(?:(?:\{\{unsigned.*?\}\})|(?:class=\"autosigned\"))?(?:\[\[[Uu]ser.*?\]\].*?\(UTC\))", votes_data, flags=re.IGNORECASE)
+				result = findresults(data[:max(header_index, data.find("(UTC)"))])
 				dupvotes = []
-				deletionreviews = findDRV(data[:data.find("==")], page)
-				find_voter_match = lambda vote: re.match("\[\[User.*?:(.*?)(?:\||(?:\]\]))", vote[vote.rfind("[[User"):], flags=re.IGNORECASE)
+				deletionreviews = findDRV(data[:header_index], page)
+				def find_user_idx(vote):
+					possible_min_user_idx = vote.rfind("[[User")
+					return possible_min_user_idx if possible_min_user_idx >= 0 else vote.rfind("[[user")
+
+				find_voter_match = lambda vote: re.match("\[\[User.*?:(.*?)(?:\||(?:\]\]))", vote[find_user_idx(vote):], flags=re.IGNORECASE)
 
 				for vote in votes:
 					try:
@@ -158,6 +169,10 @@ def main():
 						# Sometimes, a "#top" will sneak in, so remove it
 						if voter.endswith("#top"):
 							voter = voter[:-4]
+						if "dev" in form and form["dev"].value.lower() in ["1", "true", "yes"]:
+							print("<pre>{}, {}, {}</pre>".format(page, voter, vote))
+
+						# Check if the vote was made by the user we're counting votes for
 						if voter.lower() == username.lower() or voter.lower() == altusername.lower():
 							votetype = parsevote(vote[3:vote.find("'", 3)])
 							if votetype == None or votetype == "UNDETERMINED":
