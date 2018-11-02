@@ -286,7 +286,8 @@ def main():
 				print("Number of AfD's where vote matched result (green cells): {} ({:.1%})<br>".format(matchstats[0], float(matchstats[0])/total_votes))
 				print("Number of AfD's where vote didn't match result (red cells): {} ({:.1%})<br>".format(matchstats[1], float(matchstats[1])/total_votes))
 				print("Number of AfD's where result was \"No Consensus\" (yellow cells): {} ({:.1%})<br>\n".format(matchstats[2], float(matchstats[2])/total_votes))
-				print("Without considering \"No Consensus\" results, {:.1%} of AfD's were matches and {:.1%} of AfD's were not.".format(float(matchstats[0])/(total_votes - matchstats[2]), float(matchstats[1])/(total_votes - matchstats[2])))
+				if total_votes != matchstats[2]:
+					print("Without considering \"No Consensus\" results, {:.1%} of AfD's were matches and {:.1%} of AfD's were not.".format(float(matchstats[0])/(total_votes - matchstats[2]), float(matchstats[1])/(total_votes - matchstats[2])))
 			print printstr
 		else:
 			print "<br /><br />No votes found."
