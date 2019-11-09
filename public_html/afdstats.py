@@ -41,6 +41,7 @@ def main():
 	global statsresults
 	global votetypes
 	global statsvotes
+	global undetermined
 
 	starttime = time.time()
 	
@@ -57,7 +58,7 @@ def main():
 <body>
 <div style="width:875px;">"""
 	try:
-                ##################Validate input
+		##################Validate input
 		form = cgi.FieldStorage()
 		if "name" not in form:
 			errorout("No username entered.")
@@ -81,11 +82,20 @@ def main():
 		if "nomsonly" in form:
 			if form["nomsonly"].value.lower() in ["1", "true", "yes"]:
 				nomsonly = True
-				
+		
+		undetermined = True #set to false to hide undetermined as default
+		if "undetermined" in form:
+			if form["undetermined"].value.lower() in ["1", "true", "yes"]:
+				undetermined = True
+		
+		if undetermined == True:
+			votetypes.append("UNDETERMINED")
+			stats["UNDETERMINED"] = 0
+		
 		if "altname" in form:
 			altusername = urllib.unquote(form.getvalue("altname").strip())
 		else:
-                        altusername = ""
+			altusername = ""
 
 		##################Query database
 		db = MySQLdb.connect(db='enwiki_p', host="enwiki.labsdb", read_default_file=os.path.expanduser("~/replica.my.cnf"))
@@ -133,7 +143,8 @@ def main():
 		
 		tablelist = []
 		novotes = 0
-	
+		
+		print "<small><a href=\"javascript:void(0);\" onClick=\"if(document.getElementById('noVote').style.display === 'none') {document.getElementById('noVote').style.display = 'block';this.innerHTML='Hide pages without detected votes';} else {document.getElementById('noVote').style.display = 'none';this.innerHTML='Show pages without detected votes';}\">Show pages without detected votes</a></small><ul id=\"noVote\" style=\"display: none\">"
 		for entry in pages:
 			try:
 				page = entry[0]
@@ -142,23 +153,30 @@ def main():
 				raw_data = alldata["Wikipedia:" + page.replace("_", " ")]
 				data = unescape(raw_data.replace("\n", "\\n")).replace("\\n", "\n")
 				data = re.sub("<(s|strike|del)>.*?</(s|strike|del)>", "", data, flags=re.IGNORECASE|re.DOTALL)
-
+				
 				# We don't want to include the closing statement while finding votes
 				header_index = data.find("==")
 				if header_index > -1:
 					votes_data = data[header_index:]
 				else:
 					votes_data = data
+				
 				votes = re.findall("'{3}?.*?'{3}?.*?(?:(?:\{\{unsigned.*?\}\})|(?:class=\"autosigned\"))?(?:\[\[[Uu]ser.*?\]\].*?\(UTC\))", votes_data, flags=re.IGNORECASE)
-				result = findresults(data[:max(header_index, data.find("(UTC)"))])
+				result_data = data[:max(header_index, data.find("(UTC)"))]
+				result = findresults(result_data)
 				dupvotes = []
 				deletionreviews = findDRV(data[:header_index], page)
 				def find_user_idx(vote):
 					possible_min_user_idx = vote.rfind("[[User")
 					return possible_min_user_idx if possible_min_user_idx >= 0 else vote.rfind("[[user")
-
+				
 				find_voter_match = lambda vote: re.match("\[\[User.*?:(.*?)(?:\||(?:\]\]))", vote[find_user_idx(vote):], flags=re.IGNORECASE)
-
+				
+				firsteditor = DBfirsteditor(page, cursor)
+				is_nominator = False
+				if (firsteditor[0].lower() == username.lower()) or (firsteditor[0].lower() == altusername.lower()):
+					is_nominator = True
+				
 				for vote in votes:
 					try:
 						votermatch = find_voter_match(vote)
@@ -175,7 +193,9 @@ def main():
 						# Check if the vote was made by the user we're counting votes for
 						if voter.lower() == username.lower() or voter.lower() == altusername.lower():
 							votetype = parsevote(vote[3:vote.find("'", 3)])
-							if votetype == None or votetype == "UNDETERMINED":
+							if votetype == None:
+								continue
+							if (votetype == "UNDETERMINED") and ((undetermined == False) or (is_nominator == True)):
 								continue
 							timematch = re.search("(\d{2}:\d{2}, .*?) \(UTC\)", vote)
 							if timematch == None:
@@ -184,15 +204,20 @@ def main():
 								votetime = parsetime(timematch.group(1))
 							dupvotes.append((page, votetype, votetime, result, 0, deletionreviews))
 					except:
+						#print "<br />ERROR: " + str(err)
 						continue
 				if len(dupvotes) < 1:
-					firsteditor = DBfirsteditor(page, cursor)
-                                        if firsteditor[0].lower() == username.lower(): #user is nominator
-                                                tablelist.append((page, "Delete", firsteditor[1], result, 1, deletionreviews))
-                                                updatestats("Delete", result)
-                                        else:
-                                                novotes += 1
-							
+					if (is_nominator): #user is nominator
+						tablelist.append((page, "Delete", firsteditor[1], result, 1, deletionreviews))
+						updatestats("Delete", result)
+					else:
+						closermatch = find_voter_match(result_data)
+						
+						print "<li><a href = 'https://en.wikipedia.org/wiki/Wikipedia:" +  urllib.quote(page) + "'>" + page + "</a>"
+						if closermatch != None:
+							print " (closer: " + closermatch.group(1).strip() + ")"
+						print "</li>"
+						novotes += 1
 				elif len(dupvotes) > 1:
 					ch = len(dupvotes) - 1
 					tablelist.append(dupvotes[ch])
@@ -200,10 +225,11 @@ def main():
 				else:
 					tablelist.append(dupvotes[0])
 					updatestats(dupvotes[0][1], dupvotes[0][3])
-			except:
+			except Exception as err:
+				#print "<br />ERROR: " + str(err)
 				continue
 		db.close()
-		
+		print "</ul>"
 		##################Print results tables
 		totalvotes = 0
 		for i in votetypes:
@@ -214,7 +240,7 @@ def main():
 				print "<li>" + i + " votes: " + str(stats[i]) + " (" + str(round((100.0*stats[i]) / totalvotes, 1)) + "%)</li>"
 			print "</ul>"
 			if novotes:
-                                print "The remaining " + str(novotes) + " pages had no discernible vote by this user."
+				print "The remaining " + str(novotes) + " pages had no discernible vote by this user."
 			print "<br />"
 			print """<h2>Voting matrix</h2>
 <p>This table compares the user's votes to the way the AfD eventually closed. The only AfD's included in this matrix are those that have already closed, where both the vote and result could be reliably determined. Results are across the top, and the user's votes down the side.  Green cells indicate "matches", meaning that the user's vote matched (or closely resembled) the way the AfD eventually closed, whereas red cells indicate that the vote and the end result did not match.</p>
@@ -255,7 +281,7 @@ def main():
 				
 			printstr = "<h2>Individual AfD's</h2>\n"
 			if len(tablelist) > 0 and tablelist[-1][2]:
-				printstr += '<a href="afdstats.py?name=' + username.replace(" ", "_") + '&max=' + str(maxsearch) + '&startdate=' + datefmt(tablelist[-1][2]) + '&altname=' + altusername + '"><small>Next ' + str(maxsearch) + " AfD's &rarr;</small></a><br>"
+				printstr += '<a href="afdstats.py?name=' + username.replace(" ", "_") + '&max=' + str(maxsearch) + '&startdate=' + datefmt(tablelist[-1][2]) + '&altname=' + altusername + '&undetermined=' + str(undetermined) + '"><small>Next ' + str(maxsearch) + " AfD's &rarr;</small></a><br>"
 			printstr += """</div>
 <table>
 <thead>
@@ -279,7 +305,7 @@ def main():
 				printstr += match(i[1], i[3], i[5]) + "\n"
 				printstr += "</tr>\n"
 			printstr += "</tbody>\n</table>\n"
-			printstr += '<div style="width:875px;">\n<a href="afdstats.py?name=' + username.replace(" ", "_") + '&max=' + str(maxsearch) + '&startdate=' + datefmt(tablelist[-1][2]) + '&altname=' + altusername + '"><small>Next ' + str(maxsearch) + " AfD's &rarr;</small></a><br /><br />"
+			printstr += '<div style="width:875px;">\n<a href="afdstats.py?name=' + username.replace(" ", "_") + '&max=' + str(maxsearch) + '&startdate=' + datefmt(tablelist[-1][2]) + '&altname=' + altusername + '&undetermined=' + str(undetermined) +'"><small>Next ' + str(maxsearch) + " AfD's &rarr;</small></a><br /><br />"
 	
 			total_votes = sum(matchstats)
 			if total_votes > 0:
@@ -320,9 +346,9 @@ def parsevote(v):
 		return "Merge"
 	elif "redirect" in v:
 		return "Redirect"
-	elif "speedy keep" in v:
+	elif ("speedy keep" in v):
 		return "Speedy Keep"
-	elif "speedy delete" in v:
+	elif "speedy delet" in v:
 		return "Speedy Delete"
 	elif "keep" in v:
 		return "Keep"
@@ -332,8 +358,10 @@ def parsevote(v):
 		return "Transwiki"
 	elif ("userfy" in v) or ("userfied" in v) or ("incubat" in v) or ("draftify" in v):
 		return "Userfy"
+	#elif ("withdraw" in v):
+		#return "Speedy Keep"
 	else:
-		return "UNDETERMINED"  
+		return "UNDETERMINED"
 	
 	
 def parsetime(t):
@@ -345,7 +373,7 @@ def parsetime(t):
 
 
 def findresults(thepage):       #Parse through the text of an AfD to find how it was closed
-	resultsearch = re.search("The result (?:of the debate )?was(?:.*?)(?:'{3}?)(.*?)(?:'{3}?)", thepage, flags=re.IGNORECASE)
+	resultsearch = re.search("The result (?:of the debate )?was(?:.*?\n?.*?)(?:'{3}?)(.*?)(?:'{3}?)", thepage, flags=re.IGNORECASE)
 	if resultsearch == None:
 		if "The following discussion is an archived debate of the proposed deletion of the article below" in thepage or "This page is an archive of the proposed deletion of the article below." in thepage or "'''This page is no longer live.'''" in thepage:
 			return "UNDETERMINED"
@@ -359,9 +387,9 @@ def findresults(thepage):       #Parse through the text of an AfD to find how it
 			return "Merge"
 		elif "redirect" in result:
 			return "Redirect"
-		elif "speedy keep" in result or "speedily kept" in result or "speedily keep" in result or "snow keep" in result or "snowball keep" in result or "speedy close" in result:
+		elif ("speedy keep" in result) or ("speedily kept" in result) or ("speedily keep" in result) or ("snow keep" in result) or ("snowball keep" in result) or ("speedy close" in result):
 			return "Speedy Keep"
-		elif "speedy delete" in result or "speedily deleted" in result or "snow delete" in result or "snowball delete" in result:
+		elif "speedy delet" in result or "speedily deleted" in result or "snow delete" in result or "snowball delete" in result:
 			return "Speedy Delete"
 		elif "keep" in result:
 			return "Keep"
@@ -415,6 +443,8 @@ def updatestats(v, r):  #Update the global statistics variable for votes
 	elif v == "Userfy":
 		vv = "u"
 	else:
+		if (undetermined == True) and (v == "UNDETERMINED"):
+			stats[v] += 1
 		return
 	stats[v] += 1
 	if r == "Merge":
@@ -442,12 +472,12 @@ def updatestats(v, r):  #Update the global statistics variable for votes
 
 def match(v, r, drv):   #Update the global matchstats variable
 	global matchstats
-	if r == "No Consensus":
+	if r == "Not closed yet":
+		return '<td class="m">' + r + drv + '</td>'
+	elif r == "UNDETERMINED" or v == "UNDETERMINED":
+		return '<td class="m">' + r + drv + '</td>'
+	elif r == "No Consensus":
 		matchstats[2] += 1
-		return '<td class="m">' + r + drv + '</td>'
-	elif r == "Not closed yet":
-		return '<td class="m">' + r + drv + '</td>'
-	elif r == "UNDETERMINED":
 		return '<td class="m">' + r + drv + '</td>'
 	elif v == r:
 		matchstats[0] += 1
@@ -570,12 +600,12 @@ def APIfirsteditor(p):	#Finds the name of the user who created a particular page
 		return None
 
 def DBfirsteditor(p, cursor):   #Finds the name of the user who created a particular page, using a database query.  Replaces APIfirsteditor()
-        try:
-                cursor.execute("SELECT actor_name, rev_timestamp FROM revision JOIN page ON rev_page=page_id JOIN actor ON actor_id=rev_actor WHERE rev_parent_id=0 AND page_title=%s AND page_namespace=4;", (p.replace(" ", "_"),))
-                results = cursor.fetchall()[0]
-                return (results[0], datetime.datetime.strptime(results[1], "%Y%m%d%H%M%S").strftime("%B %d, %Y"))
-        except:
-                return None
+	try:
+			cursor.execute("SELECT actor_name, rev_timestamp FROM revision JOIN page ON rev_page=page_id JOIN actor ON actor_id=rev_actor WHERE rev_parent_id=0 AND page_title=%s AND page_namespace=4;", (p.replace(" ", "_"),))
+			results = cursor.fetchall()[0]
+			return (results[0], datetime.datetime.strptime(results[1], "%Y%m%d%H%M%S").strftime("%B %d, %Y"))
+	except:
+			return None
 
 
 def unescape(s):
@@ -586,26 +616,26 @@ def unescape(s):
 
 
 def datefmt(datestr):
-    try:
-        tg = re.search("([A-Za-z]*) (\d{1,2}), (\d{4})", datestr)
-        if tg == None:
-            return ""
-        monthmap = {"01":"January", "02":"February", "03":"March", "04":"April", "05":"May", "06":"June", "07":"July", "08":"August", "09":"September", "10":"October", "11":"November", "12":"December"}
-        month = [k for k,v in monthmap.items() if v==tg.group(1)][0]
-        day = tg.group(2)
-        year = tg.group(3)
-        if len(day) == 1:
-            day = "0" + day
-        return year + month + day
-    except:
-        return ""
+	try:
+		tg = re.search("([A-Za-z]*) (\d{1,2}), (\d{4})", datestr)
+		if tg == None:
+			return ""
+		monthmap = {"01":"January", "02":"February", "03":"March", "04":"April", "05":"May", "06":"June", "07":"July", "08":"August", "09":"September", "10":"October", "11":"November", "12":"December"}
+		month = [k for k,v in monthmap.items() if v==tg.group(1)][0]
+		day = tg.group(2)
+		year = tg.group(3)
+		if len(day) == 1:
+			day = "0" + day
+		return year + month + day
+	except:
+		return ""
 
 
 def link(p):
-    text = cgi.escape(p.replace("_", " ")[22:])
-    if len(text) > 64:
-        text = text[:61] + "..."
-    return '<a href="http://en.wikipedia.org/wiki/Wikipedia:' + urllib.quote(p) + '">' + text + '</a>'
+	text = cgi.escape(p.replace("_", " ")[22:])
+	if len(text) > 64:
+		text = text[:61] + "..."
+	return '<a href="http://en.wikipedia.org/wiki/Wikipedia:' + urllib.quote(p) + '">' + text + '</a>'
 
 
 def errorout(errorstr):         #General error handler, prints error message and aborts execution.
