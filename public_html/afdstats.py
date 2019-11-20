@@ -356,7 +356,7 @@ def parsevote(v):
 		return "Delete"
 	elif "transwiki" in v:
 		return "Transwiki"
-	elif ("userfy" in v) or ("userfied" in v) or ("incubat" in v) or ("draftify" in v):
+	elif ("userfy" in v) or ("userfi" in v) or ("incubat" in v) or ("draftify" in v) or ("draftifi" in v):
 		return "Userfy"
 	#elif ("withdraw" in v):
 		#return "Speedy Keep"
@@ -397,7 +397,7 @@ def findresults(thepage):       #Parse through the text of an AfD to find how it
 			return "Delete"
 		elif "transwiki" in result:
 			return "Transwiki"
-		elif ("userfy" in result) or ("userfied" in result) or ("incubat" in result) or ("draftify" in result):
+		elif ("userfy" in result) or ("userfi" in result) or ("incubat" in result) or ("draftify" in result) or ("draftifi" in result):
 			return "Userfy"
 		elif "withdraw" in result:
 			return "Speedy Keep"
