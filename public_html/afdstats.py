@@ -309,19 +309,21 @@ def main():
 
 
 
-def parsevote(v):
+def parsevote(v, result=false):
 	v = v.lower()
-	if "comment" in v:
+	if "no consensus" in v and result:
+		return "No Consensus"
+	elif "comment" in v and !result:
 		return None
-	elif "note" in v:
+	elif "note" in v and !result:
 		return None
 	elif "merge" in v:
 		return "Merge"
 	elif "redirect" in v:
 		return "Redirect"
-	elif "speedy keep" in v:
+	elif any(x in v for x in ["speedy keep", "speedily kept", "speedily keep", "snow keep", "snowball keep", "speedy close"]):
 		return "Speedy Keep"
-	elif "speedy delete" in v:
+	elif any(x in v for x in ["speedy delete", "speedily deleted", "snow delete", "snowball delete"]):
 		return "Speedy Delete"
 	elif "keep" in v:
 		return "Keep"
@@ -329,8 +331,13 @@ def parsevote(v):
 		return "Delete"
 	elif "transwiki" in v:
 		return "Transwiki"
-	elif ("userfy" in v) or ("userfied" in v) or ("incubat" in v) or ("draftify" in v):
+	elif any(x in v for x in ["userfy", "userfied", "incubat", "draftify", "move to draft"])
 		return "Userfy"
+	elif "withdraw" in v:
+		if result:
+			return "Speedy Keep"
+		else:
+			return "Keep"
 	else:
 		return "UNDETERMINED"  
 	
@@ -351,29 +358,8 @@ def findresults(thepage):       #Parse through the text of an AfD to find how it
 		else:
 			return "Not closed yet"
 	else:
-		result = resultsearch.group(1).lower()
-		if "no consensus" in result:
-			return "No Consensus"
-		elif "merge" in result:
-			return "Merge"
-		elif "redirect" in result:
-			return "Redirect"
-		elif "speedy keep" in result or "speedily kept" in result or "speedily keep" in result or "snow keep" in result or "snowball keep" in result or "speedy close" in result:
-			return "Speedy Keep"
-		elif "speedy delete" in result or "speedily deleted" in result or "snow delete" in result or "snowball delete" in result:
-			return "Speedy Delete"
-		elif "keep" in result:
-			return "Keep"
-		elif "delete" in result:
-			return "Delete"
-		elif "transwiki" in result:
-			return "Transwiki"
-		elif ("userfy" in result) or ("userfied" in result) or ("incubat" in result) or ("draftify" in result):
-			return "Userfy"
-		elif "withdraw" in result:
-			return "Speedy Keep"
-		else:
-			return "UNDETERMINED"
+		result = resultsearch.group(1)
+		return parsevote(result, true)
 
 
 def findDRV(thepage, pagename): #Try to find evidence of a DRV that was opened on this AfD
