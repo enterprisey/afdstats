@@ -170,6 +170,9 @@ def main():
 							voter = voter[:-4]
 						if "dev" in form and form["dev"].value.lower() in ["1", "true", "yes"]:
 							print("<pre>{}, {}, {}</pre>".format(page, voter, vote))
+                        
+                        # Underscores are turned into spaces by MediaWiki title processing
+                        voter = voter.replace("_", " ")
 
 						# Check if the vote was made by the user we're counting votes for
 						if voter.lower() == username.lower() or voter.lower() == altusername.lower():
