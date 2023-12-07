@@ -16,15 +16,15 @@
 <form action="afdstats.py" method="get">
 <table>
   <tr>
-    <td><label>Username:</label></td>
+    <td><label>Username:<span class="small">(case sensitive)</span></label></td>
     <td><input type="text" class="mw-ui-input" name="name" required /></td>
   </tr>
   <tr>
-    <td><label>Number of AfD's to analyze:<span class="small">(optional, default=50, max=500)</span></label></td>
+    <td><label>Number of AfD's to analyze:<span class="small">(optional, default=200, max=500)</span></label></td>
     <td><input type="text" name="max" class="mw-ui-input" maxlength="3"/></td>
   </tr>
   <tr>
-    <td><label>Starting Date:<span class="small">(optional, YYYYMMDD)</span></label></td>
+    <td><label>Show AfD's older than:<span class="small">(optional, YYYYMMDD)</span></label></td>
     <td><input type="text" name="startdate" class="mw-ui-input" maxlength="8"/></td>
   </tr>
   <tr>
