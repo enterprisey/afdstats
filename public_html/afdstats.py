@@ -1,18 +1,18 @@
-#! /usr/bin/python
+#! /data/project/afdstats/pyvenv/bin/python3
 # -*- coding: utf-8 -*-
 
 import cgitb; cgitb.enable()
 
-import MySQLdb
+import pymysql
 import sys
 import os
 import traceback
-import cgi
-import urllib
+import urllib.parse
+from urllib.request import urlopen
 import re
 import datetime
 import time
-import htmllib
+import html
 
 MAXLIMIT = 500
 
@@ -41,53 +41,63 @@ def main():
 	global statsresults
 	global votetypes
 	global statsvotes
+	global undetermined
 
 	starttime = time.time()
 	
-	print "Content-Type: text/html"
-	print
-	print """<!doctype html>
+	print("Content-Type: text/html\r\n\r\n")
+	print("""<!doctype html>
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 <title>AfD Stats - Results</title>
-<link rel="stylesheet" type="text/css" href="afdstats.css">
+<link rel="stylesheet" type="text/css" href="/afdstats.css">
 </head>
 <body>
-<div style="width:875px;">"""
+<div style="width:875px;">""")
 	try:
-                ##################Validate input
-		form = cgi.FieldStorage()
+		##################Validate input
+		# form = cgi.FieldStorage()
+		form = urllib.parse.parse_qs(os.environ['QUERY_STRING'])
 		if "name" not in form:
-			errorout("No username entered.")
-		username = form["name"].value.replace("_", " ").replace("+", " ").strip()
-		username = urllib.unquote(username)
+			errorout("No username entered.<!--" + os.environ['QUERY_STRING'] + "-->")
+		username = form["name"][0].replace("_", " ").replace("+", " ").strip()
+		username = urllib.parse.unquote(username)
 		username = username[0].capitalize() + username[1:]
 		
 		maxsearch = 200
 		if "max" in form:
 			try:
-				maxsearch = min(MAXLIMIT, int(form["max"].value))
+				maxsearch = min(MAXLIMIT, int(form["max"][0]))
 			except:
 				maxsearch = 200
 				
 		if "startdate" in form:
-			startdate = str(form["startdate"].value)
+			startdate = str(form["startdate"][0])
 		else:
 			startdate = ""
 			
 		nomsonly = False
 		if "nomsonly" in form:
-			if form["nomsonly"].value.lower() in ["1", "true", "yes"]:
+			if form["nomsonly"][0].lower() in ["1", "true", "yes"]:
 				nomsonly = True
-				
+		
+		undetermined = False #set to true to show undetermined votes by default
+		if "undetermined" in form:
+			if form["undetermined"][0].lower() in ["1", "true", "yes"]:
+				undetermined = True
+		
+		if undetermined == True:
+			votetypes.append("UNDETERMINED")
+			stats["UNDETERMINED"] = 0
+		
 		if "altname" in form:
-			altusername = urllib.unquote(form.getvalue("altname").strip())
+			altusername = urllib.parse.unquote(form["altname"][0].strip())
 		else:
-                        altusername = ""
+			altusername = ""
 
 		##################Query database
-		db = MySQLdb.connect(db='enwiki_p', host="enwiki.labsdb", read_default_file=os.path.expanduser("~/replica.my.cnf"))
+		db = pymysql.connect(db='enwiki_p', host="enwiki.labsdb", read_default_file=os.path.expanduser("~/replica.my.cnf"))
 		cursor = db.cursor()
 		
 		try:
@@ -104,21 +114,21 @@ def main():
 			cursor.execute(u'SELECT DISTINCT page_title FROM revision_userindex JOIN page ON rev_page=page_id JOIN actor ON actor_id=rev_actor WHERE actor_name=%s AND page_namespace=4 AND page_title LIKE "Articles_for_deletion%%" AND NOT page_title LIKE "Articles_for_deletion/Log/%%"' + startdatestr + ' ORDER BY rev_timestamp DESC;', (username,))
 		results = cursor.fetchall()
 
-		print "<a href='http://tools.wmflabs.org/afdstats/'><small>&larr;New search</small></a>"
-		print "<h1>AfD Statistics for User:" + cgi.escape(username) + "</h1>"
+		print("<a href='/'><small>&larr;New search</small></a>")
+		print("<h1>AfD Statistics for User:" + html.escape(username) + "</h1>")
 		
 		if len(results) == 0:
 			errorout("No AfD's found. This user may not exist.  Note that if the user's username does not appear in the wikitext of their signature, you may need to specify an alternate name.")
 
-		print "<p>These statistics were compiled by an automated process, and may contain errors or omissions due to the wide variety of styles with which people cast votes at AfD.  Any result fields which contain \"UNDETERMINED\" were not able to be parsed, and should be examined manually.</p>"
-		print "<h2>Vote totals</h2>"
+		print("<p>These statistics were compiled by an automated process, and may contain errors or omissions due to the wide variety of styles with which people cast votes at AfD.  Any result fields which contain \"UNDETERMINED\" were not able to be parsed, and should be examined manually.</p>")
+		print("<h2>Vote totals</h2>")
 		
 		if startdate:
 			datestr = datetime.datetime.strptime(startdate, "%Y%m%d").strftime("%b %d %Y")
-			print "Total number of unique AfD pages edited by " + username + " (from " + datestr + " and earlier): " + str(len(results)) + "<br />"
+			print("Total number of unique AfD pages edited by " + username + " (from " + datestr + " and earlier): " + str(len(results)) + "<br />")
 		else:
-			print "Total number of unique AfD pages edited by " + username + ": " + str(len(results)) + "<br />"
-			print "Analyzed the last " + str(min(maxsearch, len(results))) + " AfD pages edited by this user.<br />"
+			print("Total number of unique AfD pages edited by " + username + ": " + str(len(results)) + "<br />")
+			print("Analyzed the last " + str(min(maxsearch, len(results))) + " AfD pages edited by this user.<br />")
 	
 		##################Analyze results
 		pages = results[:min(maxsearch, len(results))]
@@ -128,20 +138,22 @@ def main():
 			alldata = {}
 			for i in range(0, len(pages), 50):
 				newdata = APIpagedata(pages[i:min(i+50, len(pages))])
-				alldata = dict(alldata.items() + newdata.items())
+				alldata = alldata | newdata
 		
 		tablelist = []
 		novotes = 0
-	
+		
+		print("<small><a href=\"javascript:void(0);\" onClick=\"if(document.getElementById('noVote').style.display === 'none') {document.getElementById('noVote').style.display = 'block';this.innerHTML='Hide pages without detected votes';} else {document.getElementById('noVote').style.display = 'none';this.innerHTML='Show pages without detected votes';}\">Show pages without detected votes</a></small><ul id=\"noVote\" style=\"display: none\">")
+
 		for entry in pages:
 			try:
-				page = entry[0]
+				page = entry[0].decode()
 
 				# "data" means the full page text
 				raw_data = alldata["Wikipedia:" + page.replace("_", " ")]
-				data = unescape(raw_data.replace("\n", "\\n")).replace("\\n", "\n")
+				data = html.unescape(raw_data.replace("\n", "\\n")).replace("\\n", "\n")
 				data = re.sub("<(s|strike|del)>.*?</(s|strike|del)>", "", data, flags=re.IGNORECASE|re.DOTALL)
-
+			
 				# We don't want to include the closing statement while finding votes
 				header_index = data.find("==")
 				if header_index > -1:
@@ -149,15 +161,20 @@ def main():
 				else:
 					votes_data = data
 				votes = re.findall("'{3}?.*?'{3}?.*?(?:(?:\{\{unsigned.*?\}\})|(?:class=\"autosigned\"))?(?:\[\[[Uu]ser.*?\]\].*?\(UTC\))", votes_data, flags=re.IGNORECASE)
-				result = findresults(data[:max(header_index, data.find("(UTC)"))])
+				result_data = data[:max(header_index, data.find("(UTC)"))]
+				result = findresults(result_data)
 				dupvotes = []
 				deletionreviews = findDRV(data[:header_index], page)
 				def find_user_idx(vote):
 					possible_min_user_idx = vote.rfind("[[User")
 					return possible_min_user_idx if possible_min_user_idx >= 0 else vote.rfind("[[user")
-
+				
 				find_voter_match = lambda vote: re.match("\[\[User.*?:(.*?)(?:\||(?:\]\]))", vote[find_user_idx(vote):], flags=re.IGNORECASE)
-
+				firsteditor = DBfirsteditor(page, cursor)
+				is_nominator = False
+				if (firsteditor[0].lower() == username.lower()) or (firsteditor[0].lower() == altusername.lower()):
+					is_nominator = True
+			
 				for vote in votes:
 					try:
 						votermatch = find_voter_match(vote)
@@ -168,16 +185,18 @@ def main():
 						# Sometimes, a "#top" will sneak in, so remove it
 						if voter.endswith("#top"):
 							voter = voter[:-4]
-						if "dev" in form and form["dev"].value.lower() in ["1", "true", "yes"]:
+						if "dev" in form and form["dev"][0].lower() in ["1", "true", "yes"]:
 							print("<pre>{}, {}, {}</pre>".format(page, voter, vote))
-                        
+						
 						# Underscores are turned into spaces by MediaWiki title processing
 						voter = voter.replace("_", " ")
-
+						
 						# Check if the vote was made by the user we're counting votes for
 						if voter.lower() == username.lower() or voter.lower() == altusername.lower():
 							votetype = parsevote(vote[3:vote.find("'", 3)])
-							if votetype == None or votetype == "UNDETERMINED":
+							if votetype == None:
+								continue
+							if (votetype == "UNDETERMINED") and ((undetermined == False) or (is_nominator == True)):
 								continue
 							timematch = re.search("(\d{2}:\d{2}, .*?) \(UTC\)", vote)
 							if timematch == None:
@@ -185,16 +204,21 @@ def main():
 							else:
 								votetime = parsetime(timematch.group(1))
 							dupvotes.append((page, votetype, votetime, result, 0, deletionreviews))
-					except:
+					except Exception as err:
+						#print("<br />ERROR: " + str(err)) #debug
 						continue
 				if len(dupvotes) < 1:
-					firsteditor = DBfirsteditor(page, cursor)
-                                        if firsteditor[0].lower() == username.lower(): #user is nominator
-                                                tablelist.append((page, "Delete", firsteditor[1], result, 1, deletionreviews))
-                                                updatestats("Delete", result)
-                                        else:
-                                                novotes += 1
-							
+					if (is_nominator): #user is nominator
+						tablelist.append((page, "Delete", firsteditor[1], result, 1, deletionreviews))
+						updatestats("Delete", result)
+					else:
+						closermatch = find_voter_match(result_data)
+						
+						print("<li><a href = 'https://en.wikipedia.org/wiki/Wikipedia:" +  urllib.parse.quote(page) + "'>" + page + "</a>")
+						if closermatch != None:
+							print(" (closer: " + closermatch.group(1).strip() + ")")
+						print("</li>")
+						novotes += 1
 				elif len(dupvotes) > 1:
 					ch = len(dupvotes) - 1
 					tablelist.append(dupvotes[ch])
@@ -202,23 +226,24 @@ def main():
 				else:
 					tablelist.append(dupvotes[0])
 					updatestats(dupvotes[0][1], dupvotes[0][3])
-			except:
+			except Exception as err:
+				#print("<br />ERROR: " + str(err)) #debug
 				continue
 		db.close()
-		
+		print("</ul>")
 		##################Print results tables
 		totalvotes = 0
 		for i in votetypes:
 			totalvotes += stats[i]
 		if totalvotes > 0:
-			print "<ul>"
+			print("<ul>")
 			for i in votetypes:
-				print "<li>" + i + " votes: " + str(stats[i]) + " (" + str(round((100.0*stats[i]) / totalvotes, 1)) + "%)</li>"
-			print "</ul>"
+				print("<li>" + i + " votes: " + str(stats[i]) + " (" + str(round((100.0*stats[i]) / totalvotes, 1)) + "%)</li>")
+			print("</ul>")
 			if novotes:
-                                print "The remaining " + str(novotes) + " pages had no discernible vote by this user."
-			print "<br />"
-			print """<h2>Voting matrix</h2>
+				print("The remaining " + str(novotes) + " pages had no discernible vote by this user.")
+			print("<br />")
+			print("""<h2>Voting matrix</h2>
 <p>This table compares the user's votes to the way the AfD eventually closed. The only AfD's included in this matrix are those that have already closed, where both the vote and result could be reliably determined. Results are across the top, and the user's votes down the side.  Green cells indicate "matches", meaning that the user's vote matched (or closely resembled) the way the AfD eventually closed, whereas red cells indicate that the vote and the end result did not match.</p>
 </div>
 <table border=1 style="float:left;" class="matrix">
@@ -227,21 +252,20 @@ def main():
 <th colspan=2 rowspan=2></th>
 <th colspan=9>Results</th>
 </tr>
-<tr>
-"""
+<tr>""")
 			for i in statsresults:
-				print "<th>" + i.upper() + "</th>"
-			print "</tr>"
-			print "</thead>\n<tbody>"
-			print "<tr><th rowspan=9>Votes</th></tr>"
+				print("<th>" + i.upper() + "</th>")
+			print("</tr>")
+			print("</thead>\n<tbody>")
+			print("<tr><th rowspan=9>Votes</th></tr>")
 			for vv in statsvotes:
-				print "<tr>\n<th>" + vv.upper() + "</th>"
+				print("<tr>\n<th>" + vv.upper() + "</th>")
 				for rr in statsresults:
-					print matrixmatch(vv, rr) + str(stats[vv+rr]) + "</td>"
-				print "</tr>"
-			print "</tbody>"
-			print "</table>"
-			print """<br><div style="float:left;padding:20px;">
+					print(matrixmatch(vv, rr) + str(stats[vv+rr]) + "</td>")
+				print("</tr>")
+			print("</tbody>")
+			print("</table>")
+			print("""<br><div style="float:left;padding:20px;">
 <small>Abbreviation key:
 <br>K = Keep
 <br>D = Delete
@@ -253,17 +277,17 @@ def main():
 <br>U = Userfy/Draftify
 <br>NC = No Consensus</small></div>
 <div style="clear:both;"></div><br><br>
-<div style="width:875px;">"""
+<div style="width:875px;">""")
 				
 			printstr = "<h2>Individual AfD's</h2>\n"
 			if len(tablelist) > 0 and tablelist[-1][2]:
-				printstr += '<a href="afdstats.py?name=' + username.replace(" ", "_") + '&max=' + str(maxsearch) + '&startdate=' + datefmt(tablelist[-1][2]) + '&altname=' + altusername + '"><small>Next ' + str(maxsearch) + " AfD's &rarr;</small></a><br>"
+				printstr += '<a href="afdstats.py?name=' + username.replace(" ", "_") + '&max=' + str(maxsearch) + '&startdate=' + datefmt(tablelist[-1][2]) + '&altname=' + altusername + '&undetermined=' + str(undetermined) + '"><small>Next ' + str(maxsearch) + " AfD's &rarr;</small></a><br>"
 			printstr += """</div>
 <table>
 <thead>
 <tr>
 <th scope="col">Page</th>
-<th scope="col">Date</th>
+<th scope="col">Vote date</th>
 <th scope="col">Vote</th>
 <th scope="col">Result</th>
 </tr>
@@ -281,7 +305,7 @@ def main():
 				printstr += match(i[1], i[3], i[5]) + "\n"
 				printstr += "</tr>\n"
 			printstr += "</tbody>\n</table>\n"
-			printstr += '<div style="width:875px;">\n<a href="afdstats.py?name=' + username.replace(" ", "_") + '&max=' + str(maxsearch) + '&startdate=' + datefmt(tablelist[-1][2]) + '&altname=' + altusername + '"><small>Next ' + str(maxsearch) + " AfD's &rarr;</small></a><br /><br />"
+			printstr += '<div style="width:875px;">\n<a href="afdstats.py?name=' + username.replace(" ", "_") + '&max=' + str(maxsearch) + '&startdate=' + datefmt(tablelist[-1][2]) + '&altname=' + altusername + '&undetermined=' + str(undetermined) +'"><small>Next ' + str(maxsearch) + " AfD's &rarr;</small></a><br /><br />"
 	
 			total_votes = sum(matchstats)
 			if total_votes > 0:
@@ -289,26 +313,26 @@ def main():
 				print("Number of AfD's where vote didn't match result (red cells): {} ({:.1%})<br>".format(matchstats[1], float(matchstats[1])/total_votes))
 				print("Number of AfD's where result was \"No Consensus\" (yellow cells): {} ({:.1%})<br>\n".format(matchstats[2], float(matchstats[2])/total_votes))
 				if total_votes != matchstats[2]:
-					print("Without considering \"No Consensus\" results, {:.1%} of AfD's were matches and {:.1%} of AfD's were not.".format(float(matchstats[0])/(total_votes - matchstats[2]), float(matchstats[1])/(total_votes - matchstats[2])))
-			print printstr
+					print("Without considering \"No Consensus\" results, <b>{:.1%} of AfD's were matches</b> and {:.1%} of AfD's were not.".format(float(matchstats[0])/(total_votes - matchstats[2]), float(matchstats[1])/(total_votes - matchstats[2])))
+			print(printstr)
 		else:
-			print "<br /><br />No votes found."
+			print("<br /><br />No votes found.")
 
 		elapsed = str(round(time.time() - starttime, 2))
-		print '<small>Elapsed time: ' + elapsed + ' seconds.</small><br />'
-		print FOOTER
-		print '<a href="http://tools.wmflabs.org/afdstats/"><small>&larr;New search</small></a>'
-		print "</div></body>\n</html>"
+		print('<small>Elapsed time: ' + elapsed + ' seconds.</small><br />')
+		print(FOOTER)
+		print('<a href="/"><small>&larr;New search</small></a>')
+		print("</div></body>\n</html>")
 
 	
 	except SystemExit:
 		sys.exit(0)
 	except:
-		print sys.exc_info()[0]
-		print "<br>"
-		print traceback.print_exc(file=sys.stdout)
-		print "<br><br>Fatal error.<br><br>"
-		print "</div>\n</body>\n</html>"
+		print(sys.exc_info()[0])
+		print("<br>")
+		print(traceback.print_exc(file=sys.stdout))
+		print("<br><br>Fatal error.<br><br>")
+		print("</div>\n</body>\n</html>")
 
 
 
@@ -322,9 +346,9 @@ def parsevote(v):
 		return "Merge"
 	elif "redirect" in v:
 		return "Redirect"
-	elif "speedy keep" in v:
+	elif ("speedy keep" in v):
 		return "Speedy Keep"
-	elif "speedy delete" in v:
+	elif "speedy delet" in v:
 		return "Speedy Delete"
 	elif "keep" in v:
 		return "Keep"
@@ -332,10 +356,12 @@ def parsevote(v):
 		return "Delete"
 	elif "transwiki" in v:
 		return "Transwiki"
-	elif ("userfy" in v) or ("userfied" in v) or ("incubat" in v) or ("draftify" in v):
+	elif ("userfy" in v) or ("userfi" in v) or ("incubat" in v) or ("draftify" in v) or ("draftifi" in v):
 		return "Userfy"
+	#elif ("withdraw" in v):
+		#return "Speedy Keep"
 	else:
-		return "UNDETERMINED"  
+		return "UNDETERMINED"
 	
 	
 def parsetime(t):
@@ -347,7 +373,7 @@ def parsetime(t):
 
 
 def findresults(thepage):       #Parse through the text of an AfD to find how it was closed
-	resultsearch = re.search("The result (?:of the debate )?was(?:.*?)(?:'{3}?)(.*?)(?:'{3}?)", thepage, flags=re.IGNORECASE)
+	resultsearch = re.search("The result (?:of the debate )?was(?:.*?\n?.*?)(?:'{3}?)(.*?)(?:'{3}?)", thepage, flags=re.IGNORECASE)
 	if resultsearch == None:
 		if "The following discussion is an archived debate of the proposed deletion of the article below" in thepage or "This page is an archive of the proposed deletion of the article below." in thepage or "'''This page is no longer live.'''" in thepage:
 			return "UNDETERMINED"
@@ -361,9 +387,9 @@ def findresults(thepage):       #Parse through the text of an AfD to find how it
 			return "Merge"
 		elif "redirect" in result:
 			return "Redirect"
-		elif "speedy keep" in result or "speedily kept" in result or "speedily keep" in result or "snow keep" in result or "snowball keep" in result or "speedy close" in result:
+		elif ("speedy keep" in result) or ("speedily kept" in result) or ("speedily keep" in result) or ("snow keep" in result) or ("snowball keep" in result) or ("speedy close" in result):
 			return "Speedy Keep"
-		elif "speedy delete" in result or "speedily deleted" in result or "snow delete" in result or "snowball delete" in result:
+		elif "speedy delet" in result or "speedily deleted" in result or "snow delete" in result or "snowball delete" in result:
 			return "Speedy Delete"
 		elif "keep" in result:
 			return "Keep"
@@ -371,7 +397,7 @@ def findresults(thepage):       #Parse through the text of an AfD to find how it
 			return "Delete"
 		elif "transwiki" in result:
 			return "Transwiki"
-		elif ("userfy" in result) or ("userfied" in result) or ("incubat" in result) or ("draftify" in result):
+		elif ("userfy" in result) or ("userfi" in result) or ("incubat" in result) or ("draftify" in result) or ("draftifi" in result):
 			return "Userfy"
 		elif "withdraw" in result:
 			return "Speedy Keep"
@@ -389,9 +415,9 @@ def findDRV(thepage, pagename): #Try to find evidence of a DRV that was opened o
 				drvcounter += 1
 				name = re.search("\|page=(.*?)(?:\||$)", drv.group(1), flags=re.IGNORECASE)
 				if name:
-					nametext = urllib.quote(name.group(1))
+					nametext = urllib.parse.quote(name.group(1))
 				else:
-					nametext = urllib.quote(pagename.replace("Articles_for_deletion/", "", 1))
+					nametext = urllib.parse.quote(pagename.replace("Articles_for_deletion/", "", 1))
 				drvs += '<a href="http://en.wikipedia.org/wiki/Wikipedia:Deletion_review/Log/' + drvdate.group(1).strip().replace(" ", "_") + '#' + nametext + '"><sup><small>[' + str(drvcounter) + ']</small></sup></a>'
 		return drvs
 	except:
@@ -417,6 +443,8 @@ def updatestats(v, r):  #Update the global statistics variable for votes
 	elif v == "Userfy":
 		vv = "u"
 	else:
+		if (undetermined == True) and (v == "UNDETERMINED"):
+			stats[v] += 1
 		return
 	stats[v] += 1
 	if r == "Merge":
@@ -444,12 +472,12 @@ def updatestats(v, r):  #Update the global statistics variable for votes
 
 def match(v, r, drv):   #Update the global matchstats variable
 	global matchstats
-	if r == "No Consensus":
+	if r == "Not closed yet":
+		return '<td class="m">' + r + drv + '</td>'
+	elif r == "UNDETERMINED" or v == "UNDETERMINED":
+		return '<td class="m">' + r + drv + '</td>'
+	elif r == "No Consensus":
 		matchstats[2] += 1
-		return '<td class="m">' + r + drv + '</td>'
-	elif r == "Not closed yet":
-		return '<td class="m">' + r + drv + '</td>'
-	elif r == "UNDETERMINED":
 		return '<td class="m">' + r + drv + '</td>'
 	elif v == r:
 		matchstats[0] += 1
@@ -537,11 +565,12 @@ def APIpagedata(rawpagelist):   #Grabs page text for all of the AfD's using the 
 	try:
 		p = ''
 		for page in rawpagelist:
-			p += urllib.quote("Wikipedia:" + page[0].replace("_", " ") + "|")
-		u = urllib.urlopen("http://en.wikipedia.org/w/api.php?action=query&prop=revisions|info&rvprop=content&format=xml&titles=" + p[:-3])
+			if page[0]:
+				p += urllib.parse.quote("Wikipedia:" + page[0].decode().replace("_", " ") + "|")
+		u = urlopen("http://en.wikipedia.org/w/api.php?action=query&prop=revisions|info&rvprop=content&format=xml&titles=" + p[:-3])
 		xml = u.read()
 		u.close()
-		pagelist = re.findall(r'<page.*?>.*?</page>', xml, re.DOTALL)
+		pagelist = re.findall(r'<page.*?>.*?</page>', xml.decode(), re.DOTALL)
 		pagedict = {}
 		for i in pagelist:
 			try:
@@ -549,17 +578,18 @@ def APIpagedata(rawpagelist):   #Grabs page text for all of the AfD's using the 
 				text = re.search(r'<rev.*?xml:space="preserve">(.*?)</rev>', i, re.DOTALL).group(1)
 				if re.search('<page.*?redirect=\"\".*?>', i):	 #AfD page is a redirect
 					continue
-				pagedict[unescape(pagename)] = text
+				pagedict[html.unescape(pagename)] = text
 			except:
 				continue
 		return pagedict
-	except:
-		errorout("Unable to fetch page data.  Please try again.")
+	except Exception as err:
+		errorout("Unable to fetch page data.  Please try again.<!--" + str(err) + "-->")
+
 
 
 def APIfirsteditor(p):	#Finds the name of the user who created a particular page, using the API.  Deprecated, using db query instead, see DBfirsteditor()
 	try:
-		u = urllib.urlopen("http://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Wikipedia:" + urllib.quote(p) + "&rvlimit=1&rvprop=timestamp|user&rvdir=newer&format=xml")
+		u = urlopen("http://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Wikipedia:" + urllib.parse.quote(p) + "&rvlimit=1&rvprop=timestamp|user&rvdir=newer&format=xml")
 		xml = u.read()
 		u.close()
 		s = re.search("<rev user=\"(?P<user>.*?)\" timestamp=\"(?P<timestamp>.*?)\" />", xml)
@@ -572,48 +602,41 @@ def APIfirsteditor(p):	#Finds the name of the user who created a particular page
 		return None
 
 def DBfirsteditor(p, cursor):   #Finds the name of the user who created a particular page, using a database query.  Replaces APIfirsteditor()
-        try:
-                cursor.execute("SELECT actor_name, rev_timestamp FROM revision JOIN page ON rev_page=page_id JOIN actor ON actor_id=rev_actor WHERE rev_parent_id=0 AND page_title=%s AND page_namespace=4;", (p.replace(" ", "_"),))
-                results = cursor.fetchall()[0]
-                return (results[0], datetime.datetime.strptime(results[1], "%Y%m%d%H%M%S").strftime("%B %d, %Y"))
-        except:
-                return None
-
-
-def unescape(s):
-	p = htmllib.HTMLParser(None)
-	p.save_bgn()
-	p.feed(s)
-	return p.save_end()
+	try:
+			cursor.execute("SELECT actor_name, rev_timestamp FROM revision JOIN page ON rev_page=page_id JOIN actor ON actor_id=rev_actor WHERE rev_parent_id=0 AND page_title=%s AND page_namespace=4;", (p.replace(" ", "_"),))
+			results = cursor.fetchall()[0]
+			return (results[0].decode(), datetime.datetime.strptime(results[1].decode(), "%Y%m%d%H%M%S").strftime("%B %d, %Y"))
+	except Exception as err:
+			return None
 
 
 def datefmt(datestr):
-    try:
-        tg = re.search("([A-Za-z]*) (\d{1,2}), (\d{4})", datestr)
-        if tg == None:
-            return ""
-        monthmap = {"01":"January", "02":"February", "03":"March", "04":"April", "05":"May", "06":"June", "07":"July", "08":"August", "09":"September", "10":"October", "11":"November", "12":"December"}
-        month = [k for k,v in monthmap.items() if v==tg.group(1)][0]
-        day = tg.group(2)
-        year = tg.group(3)
-        if len(day) == 1:
-            day = "0" + day
-        return year + month + day
-    except:
-        return ""
+	try:
+		tg = re.search("([A-Za-z]*) (\d{1,2}), (\d{4})", datestr)
+		if tg == None:
+			return ""
+		monthmap = {"01":"January", "02":"February", "03":"March", "04":"April", "05":"May", "06":"June", "07":"July", "08":"August", "09":"September", "10":"October", "11":"November", "12":"December"}
+		month = [k for k,v in monthmap.items() if v==tg.group(1)][0]
+		day = tg.group(2)
+		year = tg.group(3)
+		if len(day) == 1:
+			day = "0" + day
+		return year + month + day
+	except:
+		return ""
 
 
 def link(p):
-    text = cgi.escape(p.replace("_", " ")[22:])
-    if len(text) > 64:
-        text = text[:61] + "..."
-    return '<a href="http://en.wikipedia.org/wiki/Wikipedia:' + urllib.quote(p) + '">' + text + '</a>'
+	text = html.escape(p.replace("_", " ")[22:])
+	if len(text) > 64:
+		text = text[:61] + "..."
+	return '<a href="http://en.wikipedia.org/wiki/Wikipedia:' + urllib.parse.quote(p) + '">' + text + '</a>'
 
 
 def errorout(errorstr):         #General error handler, prints error message and aborts execution.
-	print "<p>ERROR: " + errorstr + "</p><p>Please <a href='http://tools.wmflabs.org/afdstats/'>try again</a>.</p>"
-	print FOOTER
-	print "</div></body>\n</html>"
+	print("<p>ERROR: " + errorstr + "</p><p>Please <a href='http://tools.wmflabs.org/afdstats/'>try again</a>.</p>")
+	print(FOOTER)
+	print("</div></body>\n</html>")
 	sys.exit(0)
 	
 main()
