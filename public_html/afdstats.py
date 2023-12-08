@@ -287,7 +287,7 @@ def main():
 <thead>
 <tr>
 <th scope="col">Page</th>
-<th scope="col">Date</th>
+<th scope="col">Vote date</th>
 <th scope="col">Vote</th>
 <th scope="col">Result</th>
 </tr>
